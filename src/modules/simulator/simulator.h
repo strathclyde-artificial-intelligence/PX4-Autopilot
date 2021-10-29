@@ -228,6 +228,7 @@ private:
 	void handle_message_optical_flow(const mavlink_message_t *msg);
 	void handle_message_rc_channels(const mavlink_message_t *msg);
 	void handle_message_vision_position_estimate(const mavlink_message_t *msg);
+	void handle_message_battery_status(const mavlink_message_t *msg);
 
 	void parameters_update(bool force);
 	void poll_for_MAVLink_messages();
