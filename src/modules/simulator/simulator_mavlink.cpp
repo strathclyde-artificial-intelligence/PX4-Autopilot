@@ -374,13 +374,6 @@ void Simulator::handle_message(const mavlink_message_t *msg)
 	}
 }
 
-void Simulator::handle_message_distance_sensor(const mavlink_message_t *msg)
-{
-	mavlink_distance_sensor_t dist;
-	mavlink_msg_distance_sensor_decode(msg, &dist);
-	publish_distance_topic(&dist);
-}
-
 
 void Simulator::handle_message_battery_status(const mavlink_message_t *msg)
 {
@@ -426,6 +419,12 @@ void Simulator::handle_message_battery_status(const mavlink_message_t *msg)
 	_battery_pub.publish(battery_status);
 }
 
+void Simulator::handle_message_distance_sensor(const mavlink_message_t *msg)
+{
+	mavlink_distance_sensor_t dist;
+	mavlink_msg_distance_sensor_decode(msg, &dist);
+	publish_distance_topic(&dist);
+}
 
 void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
 {
