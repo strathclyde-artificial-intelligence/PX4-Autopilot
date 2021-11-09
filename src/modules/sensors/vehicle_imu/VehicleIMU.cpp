@@ -146,6 +146,15 @@ void VehicleIMU::Run()
 
 	ParametersUpdate();
 
+	// check vehicle status for changes to armed state
+	if (_vehicle_control_mode_sub.updated()) {
+		vehicle_control_mode_s vehicle_control_mode;
+
+		if (_vehicle_control_mode_sub.copy(&vehicle_control_mode)) {
+			_armed = vehicle_control_mode.flag_armed;
+		}
+	}
+
 	if (!_accel_calibration.enabled() || !_gyro_calibration.enabled()) {
 		return;
 	}
@@ -210,14 +219,19 @@ void VehicleIMU::Run()
 
 				_gyro_update_latency_mean.update(Vector2f{time_run_s - _gyro_timestamp_sample_last * 1e-6f, time_run_s - _gyro_timestamp_last * 1e-6f});
 
-				return;
+				break;
 			}
 		}
 
 		// finish if there are no more updates, but didn't publish
 		if (!updated) {
-			return;
+			break;
 		}
+	}
+
+	if (hrt_elapsed_time(&_in_flight_calibration_check_timestamp_last) > 1_s) {
+		SensorCalibrationUpdate();
+		_in_flight_calibration_check_timestamp_last = hrt_absolute_time();
 	}
 }
 
@@ -491,6 +505,7 @@ bool VehicleIMU::Publish()
 			const float accel_dt_inv = 1.e6f / imu.delta_velocity_dt;
 			const Vector3f acceleration{_accel_calibration.Correct(delta_velocity * accel_dt_inv)};
 			UpdateAccelVibrationMetrics(acceleration);
+			UpdateAccelSquaredErrorSum(acceleration);
 			const Vector3f delta_velocity_corrected{acceleration / accel_dt_inv};
 
 			// vehicle_imu_status
@@ -507,6 +522,12 @@ bool VehicleIMU::Publish()
 				_status.temperature_accel = _accel_temperature / _accel_sum_count;
 				_accel_sum.zero();
 				_accel_temperature = 0;
+
+				// variance accel
+				const Vector3f variance_accel{_accel_squared_error_sum / _accel_sum_count};
+				variance_accel.copyTo(_status.var_accel);
+				_accel_squared_error_sum.zero();
+
 				_accel_sum_count = 0;
 
 				// mean gyro
@@ -530,7 +551,8 @@ bool VehicleIMU::Publish()
 			delta_angle_corrected.copyTo(imu.delta_angle);
 			delta_velocity_corrected.copyTo(imu.delta_velocity);
 			imu.delta_velocity_clipping = _delta_velocity_clipping;
-			imu.calibration_count = _accel_calibration.calibration_count() + _gyro_calibration.calibration_count();
+			imu.accel_calibration_count = _accel_calibration.calibration_count();
+			imu.gyro_calibration_count = _gyro_calibration.calibration_count();
 			imu.timestamp = hrt_absolute_time();
 			_vehicle_imu_pub.publish(imu);
 
@@ -595,6 +617,13 @@ void VehicleIMU::UpdateIntegratorConfiguration()
 	}
 }
 
+void VehicleIMU::UpdateAccelSquaredErrorSum(const Vector3f &acceleration)
+{
+	// Compute the squared error using the average from last publication for efficiency purposes
+	const Vector3f error{acceleration - Vector3f(_status.mean_accel)};
+	_accel_squared_error_sum += error.emult(error);
+}
+
 void VehicleIMU::UpdateAccelVibrationMetrics(const Vector3f &acceleration)
 {
 	// Accel high frequency vibe = filtered length of (acceleration - acceleration_prev)
@@ -634,6 +663,180 @@ void VehicleIMU::PrintStatus()
 
 	_accel_calibration.PrintStatus();
 	_gyro_calibration.PrintStatus();
+}
+
+void VehicleIMU::SensorCalibrationUpdate()
+{
+	// State variance assumed for accelerometer bias storage.
+	// This is a reference variance used to calculate the fraction of learned accelerometer bias that will be used to update the stored value.
+	// Larger values cause a larger fraction of the learned biases to be used.
+	static constexpr float max_var_allowed = 1e-3f;
+	static constexpr float max_var_ratio = 1e2f;
+
+	if (_armed) {
+		for (int i = 0; i < _estimator_sensor_bias_subs.size(); i++) {
+			estimator_sensor_bias_s estimator_sensor_bias;
+
+			if (_estimator_sensor_bias_subs[i].update(&estimator_sensor_bias)) {
+				// find corresponding accel bias
+				if (_accel_calibration.device_id() == estimator_sensor_bias.accel_device_id) {
+					const Vector3f bias{estimator_sensor_bias.accel_bias};
+					const Vector3f bias_variance{estimator_sensor_bias.accel_bias_variance};
+
+					const bool valid = (hrt_elapsed_time(&estimator_sensor_bias.timestamp) < 1_s) &&
+							   (estimator_sensor_bias.accel_device_id != 0) &&
+							   estimator_sensor_bias.accel_bias_stable &&
+							   (bias_variance.max() < max_var_allowed) &&
+							   (bias_variance.max() < max_var_ratio * bias_variance.min());
+
+					if (valid) {
+						_accel_learned_calibration[i].offset = _accel_calibration.BiasCorrectedSensorOffset(bias);
+						_accel_learned_calibration[i].bias_variance = bias_variance;
+						_accel_learned_calibration[i].valid = true;
+						_accel_cal_available = true;
+
+					} else {
+						_accel_learned_calibration[i].valid = false;
+					}
+				}
+
+				// find corresponding gyro calibration
+				if (_gyro_calibration.device_id() == estimator_sensor_bias.gyro_device_id) {
+					const Vector3f bias{estimator_sensor_bias.gyro_bias};
+					const Vector3f bias_variance{estimator_sensor_bias.gyro_bias_variance};
+
+					const bool valid = (hrt_elapsed_time(&estimator_sensor_bias.timestamp) < 1_s) &&
+							   (estimator_sensor_bias.gyro_device_id != 0) &&
+							   estimator_sensor_bias.gyro_bias_valid &&
+							   estimator_sensor_bias.gyro_bias_stable &&
+							   (bias_variance.max() < max_var_allowed) &&
+							   (bias_variance.max() < max_var_ratio * bias_variance.min());
+
+					if (valid) {
+						_gyro_learned_calibration[i].offset = _gyro_calibration.BiasCorrectedSensorOffset(bias);
+						_gyro_learned_calibration[i].bias_variance = bias_variance;
+						_gyro_learned_calibration[i].valid = true;
+						_gyro_cal_available = true;
+
+					} else {
+						_gyro_learned_calibration[i].valid = false;
+					}
+				}
+			}
+		}
+
+	}
+
+
+	// not armed and accel cal available
+	if (!_armed && _accel_cal_available) {
+
+		bool initialised = false;
+		Vector3f bias_variance {};
+		Vector3f bias_estimate {};
+
+		// apply all valid saved offsets
+		for (int i = 0; i < ORB_MULTI_MAX_INSTANCES; i++) {
+			if (_accel_learned_calibration[i].valid) {
+				if (!initialised) {
+					bias_variance = _accel_learned_calibration[i].bias_variance;
+					bias_estimate = _accel_learned_calibration[i].offset;
+					initialised = true;
+
+				} else {
+					for (int axis_index = 0; axis_index < 3; axis_index++) {
+						const float sum_of_variances = _accel_learned_calibration[i].bias_variance(axis_index) + bias_variance(axis_index);
+						const float k1 = bias_variance(axis_index) / sum_of_variances;
+						const float k2 = _accel_learned_calibration[i].bias_variance(axis_index) / sum_of_variances;
+						bias_estimate(axis_index) = k2 * bias_estimate(axis_index) + k1 * _accel_learned_calibration[i].offset(axis_index);
+						bias_variance(axis_index) *= k2;
+					}
+				}
+			}
+		}
+
+		if (initialised && bias_estimate.longerThan(0.05f)) {
+			const Vector3f accel_cal_orig{_accel_calibration.offset()};
+			Vector3f accel_cal_offset{_accel_calibration.offset()};
+
+			for (int axis_index = 0; axis_index < 3; axis_index++) {
+				accel_cal_offset(axis_index) += bias_estimate(axis_index);
+			}
+
+			if (_accel_calibration.set_offset(accel_cal_offset)) {
+
+				PX4_INFO("accel %d (%" PRIu32 ") offset committed: [%.2f %.2f %.2f]->[%.2f %.2f %.2f] (full [%.2f %.2f %.2f])",
+					 _instance, _accel_calibration.device_id(),
+					 (double)accel_cal_orig(0), (double)accel_cal_orig(1), (double)accel_cal_orig(2),
+					 (double)accel_cal_offset(0), (double)accel_cal_offset(1), (double)accel_cal_offset(2),
+					 (double)bias_estimate(0), (double)bias_estimate(1), (double)bias_estimate(2));
+
+				_accel_calibration.ParametersSave();
+			}
+		}
+
+		// reset
+		_accel_cal_available = false;
+
+		for (auto &learned_cal : _accel_learned_calibration) {
+			learned_cal = {};
+		}
+	}
+
+
+	// not armed and gyro cal available
+	if (!_armed && _gyro_cal_available) {
+		bool initialised = false;
+		Vector3f bias_variance {};
+		Vector3f bias_estimate {};
+
+		// apply all valid saved offsets
+		for (int i = 0; i < ORB_MULTI_MAX_INSTANCES; i++) {
+			if (_gyro_learned_calibration[i].valid) {
+				if (!initialised) {
+					bias_variance = _gyro_learned_calibration[i].bias_variance;
+					bias_estimate = _gyro_learned_calibration[i].offset;
+					initialised = true;
+
+				} else {
+					for (int axis_index = 0; axis_index < 3; axis_index++) {
+						const float sum_of_variances = _gyro_learned_calibration[i].bias_variance(axis_index) + bias_variance(axis_index);
+						const float k1 = bias_variance(axis_index) / sum_of_variances;
+						const float k2 = _gyro_learned_calibration[i].bias_variance(axis_index) / sum_of_variances;
+						bias_estimate(axis_index) = k2 * bias_estimate(axis_index) + k1 * _gyro_learned_calibration[i].offset(axis_index);
+						bias_variance(axis_index) *= k2;
+					}
+				}
+			}
+		}
+
+		if (initialised && bias_estimate.longerThan(0.05f)) {
+			const Vector3f gyro_cal_orig{_gyro_calibration.offset()};
+			Vector3f gyro_cal_offset{_gyro_calibration.offset()};
+
+			for (int axis_index = 0; axis_index < 3; axis_index++) {
+				gyro_cal_offset(axis_index) += bias_estimate(axis_index);
+			}
+
+			if (_gyro_calibration.set_offset(gyro_cal_offset)) {
+
+				PX4_INFO("gyro %d (%" PRIu32 ") offset committed: [%.2f %.2f %.2f]->[%.2f %.2f %.2f] (full [%.2f %.2f %.2f])",
+					 _instance, _gyro_calibration.device_id(),
+					 (double)gyro_cal_orig(0), (double)gyro_cal_orig(1), (double)gyro_cal_orig(2),
+					 (double)gyro_cal_offset(0), (double)gyro_cal_offset(1), (double)gyro_cal_offset(2),
+					 (double)bias_estimate(0), (double)bias_estimate(1), (double)bias_estimate(2));
+
+				_gyro_calibration.ParametersSave();
+			}
+		}
+
+		// reset
+		_gyro_cal_available = false;
+
+		for (auto &learned_cal : _gyro_learned_calibration) {
+			learned_cal = {};
+		}
+	}
 }
 
 } // namespace sensors
