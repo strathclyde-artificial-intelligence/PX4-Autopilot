@@ -437,6 +437,7 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
 		gps.lat = hil_gps.lat;
 		gps.lon = hil_gps.lon;
 		gps.alt = hil_gps.alt;
+
 		gps.alt_ellipsoid = hil_gps.alt;
 
 		gps.s_variance_m_s = 0.25f;
@@ -493,6 +494,8 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
 				break;
 			}
 		}
+	} else {
+		printf("GPS BLOCKED!\n");
 	}
 }
 
@@ -518,7 +521,7 @@ void Simulator::handle_message_hil_sensor(const mavlink_message_t *msg)
 	float step = diff / 4000.0f;
 
 	if (step > 1.1f || step < 0.9f) {
-		PX4_INFO("HIL_SENSOR: imu time_usec: %lu, time_usec: %lu, diff: %lu, step: %.2f", imu.time_usec, now_us, diff, step);
+		PX4_INFO("HIL_SENSOR: imu time_usec: %llu, time_usec: %llu, diff: %llu, step: %.2f", imu.time_usec, now_us, diff, step);
 	}
 
 	last_time = now_us;
@@ -541,7 +544,6 @@ void Simulator::handle_message_hil_state_quaternion(const mavlink_message_t *msg
 {
 	mavlink_hil_state_quaternion_t hil_state;
 	mavlink_msg_hil_state_quaternion_decode(msg, &hil_state);
-
 	uint64_t timestamp = hrt_absolute_time();
 
 	/* angular velocity */

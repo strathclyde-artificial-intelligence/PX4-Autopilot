@@ -640,11 +640,10 @@ Mavlink::set_hil_enabled(bool hil_enabled)
 {
 	int ret = OK;
 
-	ret = configure_stream("HIL_ACTUATOR_CONTROLS", 200.0f);
 	/* enable HIL (only on links with sufficient bandwidth) */
 	if (hil_enabled && !_hil_enabled && _datarate > 5000) {
 		_hil_enabled = true;
-
+		// ret = configure_stream("HIL_ACTUATOR_CONTROLS", 200.0f);
 		if (_param_sys_hitl.get() == 2) {		// Simulation in Hardware enabled ?
 			configure_stream("HIL_STATE_QUATERNION", 25.0f); // ground truth to display the SIH
 
@@ -1527,6 +1526,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 	case MAVLINK_MODE_NORMAL:
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
 		configure_stream_local("ALTITUDE", 1.0f);
+		configure_stream_local("SYSTEM_TIME", 1.0f);
 		configure_stream_local("ATTITUDE", 15.0f);
 		configure_stream_local("ATTITUDE_TARGET", 2.0f);
 		configure_stream_local("BATTERY_STATUS", 0.5f);
@@ -1562,6 +1562,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("VFR_HUD", 4.0f);
 		configure_stream_local("VIBRATION", 0.1f);
 		configure_stream_local("WIND_COV", 0.5f);
+		configure_stream_local("HIL_ACTUATOR_CONTROLS", 200.0f);
 
 #if !defined(CONSTRAINED_FLASH)
 		configure_stream_local("DEBUG", 1.0f);

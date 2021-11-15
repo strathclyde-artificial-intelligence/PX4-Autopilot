@@ -9,4 +9,5 @@
 
 . ${R}etc/init.d/rc.mc_defaults
 
+param set THR_MDL_FAC 0.000
 set MIXER quad_w

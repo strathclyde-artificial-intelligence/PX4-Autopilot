@@ -3251,6 +3251,7 @@ Commander::check_posvel_validity(const bool data_valid, const float data_accurac
 
 	const bool data_stale = ((hrt_elapsed_time(&data_timestamp_us) > _param_com_pos_fs_delay.get() * 1_s)
 				 || (data_timestamp_us == 0));
+
 	const float req_accuracy = (was_valid ? required_accuracy * 2.5f : required_accuracy);
 
 	const bool level_check_pass = data_valid && !data_stale && (data_accuracy < req_accuracy);
@@ -3289,6 +3290,13 @@ Commander::check_posvel_validity(const bool data_valid, const float data_accurac
 		_status_changed = true;
 	}
 
+	// if (_status_changed) {
+	// 	printf("Is data stale: %d\n", data_stale);
+	// 	printf("Is data acccurate enough: %d\n", level_check_pass);
+	// 	printf("Data acc: %f\n", (double)data_accuracy);
+	// 	printf("Data valid: %d\n", data_valid);
+
+	// }
 	return valid;
 }
 
@@ -4041,7 +4049,6 @@ void Commander::UpdateEstimateValidity()
 	_status_flags.condition_global_position_valid =
 		check_posvel_validity(lpos.xy_valid && !_nav_test_failed, gpos.eph, _param_com_pos_fs_eph.get(), gpos.timestamp,
 				      &_last_gpos_fail_time_us, &_gpos_probation_time_us, _status_flags.condition_global_position_valid);
-
 	_status_flags.condition_local_position_valid =
 		check_posvel_validity(lpos.xy_valid && !_nav_test_failed, lpos.eph, lpos_eph_threshold_adj, lpos.timestamp,
 				      &_last_lpos_fail_time_us, &_lpos_probation_time_us, _status_flags.condition_local_position_valid);
