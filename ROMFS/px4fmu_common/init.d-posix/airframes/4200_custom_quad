@@ -10,7 +10,7 @@
 . ${R}etc/init.d/rc.mc_defaults
 
 # Failsafe for GCS signal loss
-param set COM_DL_LOSS_T 50
+param set COM_DL_LOSS_T 300 
 # Publish only primary mag
 #param set SENS_MAG_MODE 0
 # Use only 1 EKF instance (easier debugging)

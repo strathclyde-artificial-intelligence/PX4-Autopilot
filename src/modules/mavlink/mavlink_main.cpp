@@ -1562,7 +1562,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("VFR_HUD", 4.0f);
 		configure_stream_local("VIBRATION", 0.1f);
 		configure_stream_local("WIND_COV", 0.5f);
-		configure_stream_local("HIL_ACTUATOR_CONTROLS", 200.0f);
+		configure_stream_local("HIL_ACTUATOR_CONTROLS", 250.0f); // Originally 200
 
 #if !defined(CONSTRAINED_FLASH)
 		configure_stream_local("DEBUG", 1.0f);
