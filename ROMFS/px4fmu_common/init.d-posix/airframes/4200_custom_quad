@@ -14,6 +14,10 @@ param set COM_DL_LOSS_T 300
 # Publish only primary mag
 #param set SENS_MAG_MODE 0
 # Use only 1 EKF instance (easier debugging)
+
+param set MC_ROLLRATE_MAX 100
+param set MC_PITCHRATE_MAX 100
+
 param set EKF2_MULTI_IMU 0
 param set EKF2_MULTI_MAG 0
 param set SENS_IMU_MODE 1
@@ -26,16 +30,15 @@ param set SYS_HITL 0
 param set BAT1_SOURCE 1 # external battery info
 param set EKF2_AID_MASK 1  
 param set EKF2_MAG_TYPE 0 
-# rust sim param set EKF2_SYNT_MAG_Z 1
 param set EKF2_MAG_CHECK 1
 param set MIS_MNT_YAW_CTL 1
 param set MC_ROLLRATE_K 1 
-param set MC_ROLLRATE_D 0.006  #0.0090 
-param set MC_ROLLRATE_I 0.300 
+param set MC_ROLLRATE_D 0.0004 #0.0090 
+param set MC_ROLLRATE_I 0.02 
 
 param set MC_PITCHRATE_K 1 
-param set MC_PITCHRATE_D 0.006 #0.0090 
-param set MC_PITCHRATE_I 0.300 
+param set MC_PITCHRATE_D 0.0005 #0.0090 
+param set MC_PITCHRATE_I 0.02 
 
 param set MC_YAWRATE_K 1 
 param set MC_YAWRATE_I 0.10 
@@ -56,10 +59,10 @@ param set IMU_ACCEL_CUTOFF 30.000
 
 param set MPC_POS_MODE 3 
 param set MPC_THR_MIN 0.12
-param set EKF2_BCOEF_X 25
-param set EKF2_BCOEF_Y 25
+param set EKF2_BCOEF_X 100 
+param set EKF2_BCOEF_Y 100
 param set EKF2_GND_EFF_DZ 0
-param set EKF2_MCOEF 1
+param set EKF2_MCOEF 0.15
 
 param set EKF2_GPS_V_NOISE 0.2
 param set EKF2_GPS_P_NOISE 0.2

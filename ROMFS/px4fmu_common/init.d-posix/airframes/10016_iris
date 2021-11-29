@@ -8,6 +8,7 @@
 #
 
 . ${R}etc/init.d/rc.mc_defaults
-
+param set BAT1_SOURCE 1
+param set COM_DL_LOSS_T 300
 param set THR_MDL_FAC 0.000
 set MIXER quad_w
