@@ -15,8 +15,8 @@ param set COM_DL_LOSS_T 300
 #param set SENS_MAG_MODE 0
 # Use only 1 EKF instance (easier debugging)
 
-param set MC_ROLLRATE_MAX 100
-param set MC_PITCHRATE_MAX 100
+param set MC_ROLLRATE_MAX 20
+param set MC_PITCHRATE_MAX 20 
 
 param set EKF2_MULTI_IMU 0
 param set EKF2_MULTI_MAG 0
@@ -43,11 +43,11 @@ param set MC_PITCHRATE_I 0.02
 param set MC_YAWRATE_K 1 
 param set MC_YAWRATE_I 0.10 
 
-param set THR_MDL_FAC 1.000
+param set THR_MDL_FAC 0.000
 param set MPC_USE_HTE 1.000
 param set MPC_THR_HOVER 0.50
 
-param set MC_AIRMODE 0.000
+param set MC_AIRMODE 1.000
 
 param set IMU_GYRO_RATEMAX 0
 param set IMU_INTEG_RATE 250
