@@ -3684,18 +3684,21 @@ void Commander::battery_status_check()
 	    && rtl_time_estimate.safe_time_estimate >= worst_battery_time_s
 	    && _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_RTL
 	    && _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_LAND) {
-		// Try to trigger RTL
-		if (main_state_transition(_status, commander_state_s::MAIN_STATE_AUTO_RTL, _status_flags,
-					  _internal_state) == TRANSITION_CHANGED) {
-			mavlink_log_emergency(&_mavlink_log_pub, "Remaining flight time low, returning to land\t");
-			events::send(events::ID("commander_remaining_flight_time_rtl"), {events::Log::Critical, events::LogInternal::Info},
-				     "Remaining flight time low, returning to land");
+		// This change (from PX4 upstream) makes external batteries that *do not* publish estimated time remaining NOT WORK
 
-		} else {
-			mavlink_log_emergency(&_mavlink_log_pub, "Remaining flight time low, land now!\t");
-			events::send(events::ID("commander_remaining_flight_time_land"), {events::Log::Critical, events::LogInternal::Info},
-				     "Remaining flight time low, land now!");
-		}
+		// Try to trigger RTL
+
+		// if (main_state_transition(_status, commander_state_s::MAIN_STATE_AUTO_RTL, _status_flags,
+		// 			  _internal_state) == TRANSITION_CHANGED) {
+		// 	mavlink_log_emergency(&_mavlink_log_pub, "Remaining flight time low, returning to land\t");
+		// 	events::send(events::ID("commander_remaining_flight_time_rtl"), {events::Log::Critical, events::LogInternal::Info},
+		// 		     "Remaining flight time low, returning to land");
+
+		// } else {
+		// 	mavlink_log_emergency(&_mavlink_log_pub, "Remaining flight time low, land now!\t");
+		// 	events::send(events::ID("commander_remaining_flight_time_land"), {events::Log::Critical, events::LogInternal::Info},
+		// 		     "Remaining flight time low, land now!");
+		// }
 
 		_rtl_time_actions_done = true;
 	}
