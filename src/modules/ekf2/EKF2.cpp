@@ -194,6 +194,7 @@ bool EKF2::multi_init(int imu, int mag)
 	_ekf2_timestamps_pub.advertise();
 	_ekf_gps_drift_pub.advertise();
 	_estimator_baro_bias_pub.advertise();
+	_estimator_event_flags_pub.advertise();
 	_estimator_innovation_test_ratios_pub.advertise();
 	_estimator_innovation_variances_pub.advertise();
 	_estimator_innovations_pub.advertise();
@@ -266,7 +267,7 @@ void EKF2::Run()
 		_ekf.set_min_required_gps_health_time(_param_ekf2_req_gps_h.get() * 1_s);
 
 		// The airspeed scale factor correcton is only available via parameter as used by the airspeed module
-		param_t param_aspd_scale = param_find("ASPD_SCALE");
+		param_t param_aspd_scale = param_find("ASPD_SCALE_1");
 
 		if (param_aspd_scale != PARAM_INVALID) {
 			param_get(param_aspd_scale, &_airspeed_scale_factor);
@@ -715,7 +716,7 @@ void EKF2::PublishGlobalPosition(const hrt_abstime &timestamp)
 		global_pos.timestamp_sample = timestamp;
 
 		// Position of local NED origin in GPS / WGS84 frame
-		map_projection_reproject(&_ekf.global_origin(), position(0), position(1), &global_pos.lat, &global_pos.lon);
+		_ekf.global_origin().reproject(position(0), position(1), global_pos.lat, global_pos.lon);
 
 		float delta_xy[2];
 		_ekf.get_posNE_reset(delta_xy, &global_pos.lat_lon_reset_counter);
@@ -866,9 +867,9 @@ void EKF2::PublishLocalPosition(const hrt_abstime &timestamp)
 
 	// Position of local NED origin in GPS / WGS84 frame
 	if (_ekf.global_origin_valid()) {
-		lpos.ref_timestamp = _ekf.global_origin().timestamp;
-		lpos.ref_lat = math::degrees(_ekf.global_origin().lat_rad); // Reference point latitude in degrees
-		lpos.ref_lon = math::degrees(_ekf.global_origin().lon_rad); // Reference point longitude in degrees
+		lpos.ref_timestamp = _ekf.global_origin().getProjectionReferenceTimestamp();
+		lpos.ref_lat = _ekf.global_origin().getProjectionReferenceLat(); // Reference point latitude in degrees
+		lpos.ref_lon = _ekf.global_origin().getProjectionReferenceLon(); // Reference point longitude in degrees
 		lpos.ref_alt = _ekf.getEkfGlobalOriginAltitude();           // Reference point in MSL altitude meters
 		lpos.xy_global = true;
 		lpos.z_global = true;
@@ -887,6 +888,7 @@ void EKF2::PublishLocalPosition(const hrt_abstime &timestamp)
 
 	lpos.heading = Eulerf(_ekf.getQuaternion()).psi();
 	lpos.delta_heading = Eulerf(delta_q_reset).psi();
+	lpos.heading_good_for_control = _ekf.isYawFinalAlignComplete();
 
 	// Distance to bottom surface (ground) in meters
 	// constrain the distance to ground to _rng_gnd_clearance
@@ -1705,46 +1707,46 @@ void EKF2::UpdateMagSample(ekf2_timestamps_s &ekf2_timestamps)
 
 void EKF2::UpdateRangeSample(ekf2_timestamps_s &ekf2_timestamps)
 {
-	if (!_distance_sensor_selected) {
-		// get subscription index of first downward-facing range sensor
-		uORB::SubscriptionMultiArray<distance_sensor_s> distance_sensor_subs{ORB_ID::distance_sensor};
+	distance_sensor_s distance_sensor;
 
-		if (distance_sensor_subs.advertised()) {
-			for (unsigned i = 0; i < distance_sensor_subs.size(); i++) {
-				distance_sensor_s distance_sensor;
+	if (_distance_sensor_selected < 0) {
 
-				if (distance_sensor_subs[i].copy(&distance_sensor)) {
+		if (_distance_sensor_subs.advertised()) {
+			for (unsigned i = 0; i < _distance_sensor_subs.size(); i++) {
+
+				if (_distance_sensor_subs[i].update(&distance_sensor)) {
 					// only use the first instace which has the correct orientation
 					if ((hrt_elapsed_time(&distance_sensor.timestamp) < 100_ms)
 					    && (distance_sensor.orientation == distance_sensor_s::ROTATION_DOWNWARD_FACING)) {
 
-						if (_distance_sensor_sub.ChangeInstance(i)) {
-							int ndist = orb_group_count(ORB_ID(distance_sensor));
+						int ndist = orb_group_count(ORB_ID(distance_sensor));
 
-							if (ndist > 1) {
-								PX4_INFO("%d - selected distance_sensor:%d (%d advertised)", _instance, i, ndist);
-							}
-
-							_distance_sensor_selected = true;
-							break;
+						if (ndist > 1) {
+							PX4_INFO("%d - selected distance_sensor:%d (%d advertised)", _instance, i, ndist);
 						}
+
+						_distance_sensor_selected = i;
+						_last_range_sensor_update = distance_sensor.timestamp;
+						_distance_sensor_last_generation = _distance_sensor_subs[_distance_sensor_selected].get_last_generation() - 1;
+						break;
 					}
 				}
 			}
 		}
 	}
 
-	// EKF range sample
-	const unsigned last_generation = _distance_sensor_sub.get_last_generation();
-	distance_sensor_s distance_sensor;
+	if (_distance_sensor_selected >= 0 && _distance_sensor_subs[_distance_sensor_selected].update(&distance_sensor)) {
+		// EKF range sample
 
-	if (_distance_sensor_sub.update(&distance_sensor)) {
 		if (_msg_missed_distance_sensor_perf == nullptr) {
 			_msg_missed_distance_sensor_perf = perf_alloc(PC_COUNT, MODULE_NAME": distance_sensor messages missed");
 
-		} else if (_distance_sensor_sub.get_last_generation() != last_generation + 1) {
+		} else if (_distance_sensor_subs[_distance_sensor_selected].get_last_generation() != _distance_sensor_last_generation +
+			   1) {
 			perf_count(_msg_missed_distance_sensor_perf);
 		}
+
+		_distance_sensor_last_generation = _distance_sensor_subs[_distance_sensor_selected].get_last_generation();
 
 		if (distance_sensor.orientation == distance_sensor_s::ROTATION_DOWNWARD_FACING) {
 			rangeSample range_sample {
@@ -1766,7 +1768,7 @@ void EKF2::UpdateRangeSample(ekf2_timestamps_s &ekf2_timestamps)
 	}
 
 	if (hrt_elapsed_time(&_last_range_sensor_update) > 1_s) {
-		_distance_sensor_selected = false;
+		_distance_sensor_selected = -1;
 	}
 }
 
@@ -1872,12 +1874,14 @@ void EKF2::UpdateMagCalibration(const hrt_abstime &timestamp)
 			float declination_deg;
 
 			if (_ekf.get_mag_decl_deg(&declination_deg)) {
-				_param_ekf2_mag_decl.set(declination_deg);
-				_mag_decl_saved = true;
+				_param_ekf2_mag_decl.update();
 
-				if (!_multi_mode || (_multi_mode && _instance == 0)) {
+				if (PX4_ISFINITE(declination_deg) && (fabsf(declination_deg - _param_ekf2_mag_decl.get()) > 0.1f)) {
+					_param_ekf2_mag_decl.set(declination_deg);
 					_param_ekf2_mag_decl.commit_no_notification();
 				}
+
+				_mag_decl_saved = true;
 			}
 		}
 	}

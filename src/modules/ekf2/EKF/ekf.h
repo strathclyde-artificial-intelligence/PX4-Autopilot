@@ -157,7 +157,7 @@ public:
 	// get the ekf WGS-84 origin position and height and the system time it was last set
 	// return true if the origin is valid
 	bool getEkfGlobalOrigin(uint64_t &origin_time, double &latitude, double &longitude, float &origin_alt) const;
-	bool setEkfGlobalOrigin(const double latitude, const double longitude, const float altitude);
+	void setEkfGlobalOrigin(const double latitude, const double longitude, const float altitude);
 
 	float getEkfGlobalOriginAltitude() const { return _gps_alt_ref; }
 	bool setEkfGlobalOriginAltitude(const float altitude);
@@ -214,6 +214,16 @@ public:
 	}
 
 	bool isTerrainEstimateValid() const { return _hagl_valid; };
+
+	bool isYawFinalAlignComplete() const
+	{
+		const bool is_using_mag = (_control_status.flags.mag_3D || _control_status.flags.mag_hdg);
+		const bool is_mag_alignment_in_flight_complete = is_using_mag
+		                                                 && _control_status.flags.mag_aligned_in_flight
+		                                                 && ((_imu_sample_delayed.time_us - _flt_mag_align_start_time) > (uint64_t)1e6);
+		return _control_status.flags.yaw_align
+		       && (is_mag_alignment_in_flight_complete || !is_using_mag);
+	}
 
 	uint8_t getTerrainEstimateSensorBitfield() const { return _hagl_sensor_status.value; }
 

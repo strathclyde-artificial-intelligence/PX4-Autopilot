@@ -70,6 +70,8 @@ FixedwingPositionControl::FixedwingPositionControl(bool vtol) :
 	// limit to 50 Hz
 	_local_pos_sub.set_interval_ms(20);
 
+	_tecs_status_pub.advertise();
+
 	/* fetch initial parameter values */
 	parameters_update();
 }
@@ -772,6 +774,8 @@ FixedwingPositionControl::control_auto(const hrt_abstime &now, const Vector2d &c
 
 	const uint8_t position_sp_type = handle_setpoint_type(current_sp.type, current_sp);
 
+	_position_sp_type = position_sp_type;
+
 	switch (position_sp_type) {
 	case position_setpoint_s::SETPOINT_TYPE_IDLE:
 		_att_sp.thrust_body[0] = 0.0f;
@@ -797,12 +801,12 @@ FixedwingPositionControl::control_auto(const hrt_abstime &now, const Vector2d &c
 	}
 
 	/* reset landing state */
-	if (_position_sp_type != position_setpoint_s::SETPOINT_TYPE_LAND) {
+	if (position_sp_type != position_setpoint_s::SETPOINT_TYPE_LAND) {
 		reset_landing_state();
 	}
 
 	/* reset takeoff/launch state */
-	if (_position_sp_type != position_setpoint_s::SETPOINT_TYPE_TAKEOFF) {
+	if (position_sp_type != position_setpoint_s::SETPOINT_TYPE_TAKEOFF) {
 		reset_takeoff_state();
 	}
 
@@ -812,7 +816,7 @@ FixedwingPositionControl::control_auto(const hrt_abstime &now, const Vector2d &c
 	}
 
 	/* Copy thrust output for publication, handle special cases */
-	if (_position_sp_type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF && // launchdetector only available in auto
+	if (position_sp_type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF && // launchdetector only available in auto
 	    _launch_detection_state != LAUNCHDETECTION_RES_DETECTED_ENABLEMOTORS &&
 	    !_runway_takeoff.runwayTakeoffEnabled()) {
 
@@ -821,12 +825,12 @@ FixedwingPositionControl::control_auto(const hrt_abstime &now, const Vector2d &c
 		   the pre-takeoff throttle and the idle throttle normally map to the same parameter. */
 		_att_sp.thrust_body[0] = _param_fw_thr_idle.get();
 
-	} else if (_position_sp_type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF &&
+	} else if (position_sp_type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF &&
 		   _runway_takeoff.runwayTakeoffEnabled()) {
 
 		_att_sp.thrust_body[0] = _runway_takeoff.getThrottle(now, get_tecs_thrust());
 
-	} else if (_position_sp_type == position_setpoint_s::SETPOINT_TYPE_IDLE) {
+	} else if (position_sp_type == position_setpoint_s::SETPOINT_TYPE_IDLE) {
 
 		_att_sp.thrust_body[0] = 0.0f;
 
@@ -846,11 +850,11 @@ FixedwingPositionControl::control_auto(const hrt_abstime &now, const Vector2d &c
 	bool use_tecs_pitch = true;
 
 	// auto runway takeoff
-	use_tecs_pitch &= !(_position_sp_type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF &&
+	use_tecs_pitch &= !(position_sp_type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF &&
 			    (_launch_detection_state == LAUNCHDETECTION_RES_NONE || _runway_takeoff.runwayTakeoffEnabled()));
 
 	// flaring during landing
-	use_tecs_pitch &= !(_position_sp_type == position_setpoint_s::SETPOINT_TYPE_LAND && _land_noreturn_vertical);
+	use_tecs_pitch &= !(position_sp_type == position_setpoint_s::SETPOINT_TYPE_LAND && _land_noreturn_vertical);
 
 	if (use_tecs_pitch) {
 		_att_sp.pitch_body = get_tecs_pitch();
@@ -1911,11 +1915,11 @@ FixedwingPositionControl::Run()
 
 		if (_control_mode.flag_control_offboard_enabled) {
 			// Convert Local setpoints to global setpoints
-			if (!map_projection_initialized(&_global_local_proj_ref)
-			    || (_global_local_proj_ref.timestamp != _local_pos.ref_timestamp)) {
+			if (!_global_local_proj_ref.isInitialized()
+			    || (_global_local_proj_ref.getProjectionReferenceTimestamp() != _local_pos.ref_timestamp)) {
 
-				map_projection_init_timestamped(&_global_local_proj_ref, _local_pos.ref_lat, _local_pos.ref_lon,
-								_local_pos.ref_timestamp);
+				_global_local_proj_ref.initReference(_local_pos.ref_lat, _local_pos.ref_lon,
+								     _local_pos.ref_timestamp);
 				_global_local_alt0 = _local_pos.ref_alt;
 			}
 
@@ -1926,7 +1930,8 @@ FixedwingPositionControl::Run()
 					double lat;
 					double lon;
 
-					if (map_projection_reproject(&_global_local_proj_ref, trajectory_setpoint.x, trajectory_setpoint.y, &lat, &lon) == 0) {
+					if (_global_local_proj_ref.isInitialized()) {
+						_global_local_proj_ref.reproject(trajectory_setpoint.x, trajectory_setpoint.y, lat, lon);
 						_pos_sp_triplet = {}; // clear any existing
 
 						_pos_sp_triplet.timestamp = trajectory_setpoint.timestamp;
