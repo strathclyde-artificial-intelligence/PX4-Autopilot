@@ -69,8 +69,10 @@ enum MAVLINK_WPM_CODES {
 	MAVLINK_WPM_CODE_ENUM_END
 };
 
+// Added one order of magnitude to both numbers below vvvvvv
 static constexpr uint64_t MAVLINK_MISSION_PROTOCOL_TIMEOUT_DEFAULT = 50000000; ///< Protocol action timeout in us
-static constexpr uint64_t MAVLINK_MISSION_RETRY_TIMEOUT_DEFAULT = 250000; ///< Protocol retry timeout in us
+static constexpr uint64_t MAVLINK_MISSION_RETRY_TIMEOUT_DEFAULT = 2500000; ///< Protocol retry timeout in us
+// Added one order of magnitude to both numbers below ^^^^^^
 
 class Mavlink;
 
