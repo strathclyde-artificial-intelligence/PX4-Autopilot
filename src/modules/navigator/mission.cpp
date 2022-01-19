@@ -237,8 +237,6 @@ Mission::on_active()
 			/* switch to next waypoint if 'autocontinue' flag set */
 			advance_mission();
 			set_mission_items();
-		} else {
-			printf("Autocontinue not set for mission item %d\n", _current_mission_index);
 		}
 
 	} else {
@@ -563,7 +561,6 @@ Mission::update_mission()
 void
 Mission::advance_mission()
 {
-	printf("Advancing mission from item %d \n", _current_mission_index);
 	/* do not advance mission item if we're processing sub mission work items */
 	if (_work_item_type != WORK_ITEM_TYPE_DEFAULT) {
 		return;
@@ -875,6 +872,7 @@ Mission::set_mission_items()
 				if (_mission_item.nav_cmd == NAV_CMD_VTOL_TAKEOFF
 				    && _work_item_type == WORK_ITEM_TYPE_TRANSITON_AFTER_TAKEOFF
 				    && new_work_item_type == WORK_ITEM_TYPE_DEFAULT) {
+
 					new_work_item_type = WORK_ITEM_TYPE_DEFAULT;
 					_mission_item.nav_cmd = NAV_CMD_WAYPOINT;
 					_mission_item.autocontinue = true;
@@ -1696,7 +1694,6 @@ Mission::report_do_jump_mission_changed(int index, int do_jumps_remaining)
 void
 Mission::set_mission_item_reached()
 {
-	printf("Reached wp\n");
 	_navigator->get_mission_result()->seq_reached = _current_mission_index;
 	_navigator->set_mission_result_updated();
 
@@ -1711,7 +1708,6 @@ Mission::set_mission_item_reached()
 void
 Mission::set_current_mission_item()
 {
-	printf("Current mission item: %d\n", _current_mission_index);
 	_navigator->get_mission_result()->finished = false;
 	_navigator->get_mission_result()->seq_current = _current_mission_index;
 
