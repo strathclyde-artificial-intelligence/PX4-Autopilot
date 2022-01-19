@@ -7,14 +7,15 @@
 
 . ${R}etc/init.d/rc.vtol_defaults
 
+param set NAV_FW_ALT_RAD 20
 param set COM_RCL_EXCEPT 1
 param set FW_L1_PERIOD 15
 param set FW_MAN_P_MAX 30
 param set FW_PR_FF 0.5
 param set FW_PR_P 0.2
 param set FW_PSP_OFF 0
-param set FW_P_LIM_MAX 25
-param set FW_P_LIM_MIN -25
+param set FW_P_LIM_MAX 35
+param set FW_P_LIM_MIN -35
 param set FW_RR_FF 0.5
 param set FW_RR_P 0.05
 param set FW_THR_CRUISE 0.6

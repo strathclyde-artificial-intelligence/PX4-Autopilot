@@ -144,11 +144,14 @@ MissionBlock::is_mission_item_reached()
 
 		const float mission_item_altitude_amsl = get_absolute_altitude_for_item(_mission_item);
 
+
 		dist = get_distance_to_point_global_wgs84(_mission_item.lat, _mission_item.lon, mission_item_altitude_amsl,
 				_navigator->get_global_position()->lat,
 				_navigator->get_global_position()->lon,
 				_navigator->get_global_position()->alt,
 				&dist_xy, &dist_z);
+
+		// printf("Distance from point %f\n", (double)dist);
 
 		if ((_mission_item.nav_cmd == NAV_CMD_TAKEOFF || _mission_item.nav_cmd == NAV_CMD_VTOL_TAKEOFF)
 		    && _navigator->get_vstatus()->vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
