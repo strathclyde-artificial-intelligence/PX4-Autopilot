@@ -872,7 +872,7 @@ Mission::set_mission_items()
 				if (_mission_item.nav_cmd == NAV_CMD_VTOL_TAKEOFF
 				    && _work_item_type == WORK_ITEM_TYPE_TRANSITON_AFTER_TAKEOFF
 				    && new_work_item_type == WORK_ITEM_TYPE_DEFAULT) {
-
+					    printf("takeoff completed and transitioned, move to takeoff wp as fixed wing \n");
 					new_work_item_type = WORK_ITEM_TYPE_DEFAULT;
 					_mission_item.nav_cmd = NAV_CMD_WAYPOINT;
 					_mission_item.autocontinue = true;
