@@ -7,6 +7,7 @@
 
 . ${R}etc/init.d/rc.vtol_defaults
 
+param set COM_RCL_EXCEPT 1
 param set FW_L1_PERIOD 25
 param set FW_MAN_P_MAX 30
 param set FW_PR_FF 0.5
