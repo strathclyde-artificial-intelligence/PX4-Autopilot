@@ -9,6 +9,7 @@
 
 . ${R}etc/init.d/rc.mc_defaults
 
+param set COM_DL_LOSS_T 100
 param set MIS_DIST_WPS 0
 # Failsafe for GCS signal loss
 param set COM_DL_LOSS_T 300 
