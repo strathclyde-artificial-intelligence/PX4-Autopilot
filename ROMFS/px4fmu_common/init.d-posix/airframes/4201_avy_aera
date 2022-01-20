@@ -7,7 +7,6 @@
 
 . ${R}etc/init.d/rc.vtol_defaults
 
-param set FW_AIRSPD_TRIM 27
 param set NAV_FW_ALT_RAD 20
 param set COM_RCL_EXCEPT 1
 param set FW_L1_PERIOD 15
@@ -19,7 +18,7 @@ param set FW_P_LIM_MAX 35
 param set FW_P_LIM_MIN -35
 param set FW_RR_FF 0.5
 param set FW_RR_P 0.05
-param set FW_THR_CRUISE 0.6
+param set FW_THR_CRUISE 0.8
 param set FW_THR_MAX 1
 param set FW_THR_MIN 0.05
 param set FW_T_CLMB_MAX 8
@@ -28,6 +27,7 @@ param set FW_T_SINK_MIN 2.2
 param set FW_P_TC 0.7
 param set MIS_TAKEOFF_ALT 15
 
+param set MPC_XY_CRUISE 20
 param set MPC_ACC_HOR_MAX 5
 param set MPC_XY_P 0.95
 param set MPC_XY_VEL_P_ACC 1.8
