@@ -74,6 +74,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_command_ack.h>
+#include <uORB/topics/navigator_mission_item.h>
 
 #include <random>
 
@@ -236,6 +237,7 @@ private:
 	void request_hil_state_quaternion();
 	void send();
 	void send_controls();
+	void send_mission_status();
 	void send_heartbeat();
 	void send_mavlink_message(const mavlink_message_t &aMsg);
 	void update_sensors(const hrt_abstime &time, const mavlink_hil_sensor_t &sensors);
@@ -262,6 +264,10 @@ private:
 	// uORB subscription handlers
 	int _actuator_outputs_sub{-1};
 	actuator_outputs_s _actuator_outputs{};
+
+	int _mission_status_sub{-1};
+	navigator_mission_item_s _mission_status{};
+
 
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};

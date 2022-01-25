@@ -195,6 +195,23 @@ void Simulator::send_controls()
 	}
 }
 
+void Simulator::send_mission_status()
+{
+	orb_copy(ORB_ID(navigator_mission_item), _mission_status_sub, &_mission_status);
+	float x, y;
+
+	mavlink_mission_item_int_t mission_item;
+	mission_item.seq = _mission_status.sequence_current;
+	mission_item.frame = _mission_status.frame;
+	_global_local_proj_ref.project(_mission_status.latitude, _mission_status.longitude, x, y);
+	mission_item.x = x;
+	mission_item.y = y;
+	mission_item.z = _mission_status.altitude;
+	mavlink_message_t message{};
+	mavlink_msg_mission_item_int_encode(_param_mav_sys_id.get(), _param_mav_comp_id.get(), &message, &mission_item);
+	send_mavlink_message(message);
+}
+
 void Simulator::update_sensors(const hrt_abstime &time, const mavlink_hil_sensor_t &sensors)
 {
 	// temperature only updated with baro
@@ -740,6 +757,8 @@ void Simulator::send()
 	// Only subscribe to the first actuator_outputs to fill a single HIL_ACTUATOR_CONTROLS.
 	_actuator_outputs_sub = orb_subscribe_multi(ORB_ID(actuator_outputs), 0);
 
+	_mission_status_sub = orb_subscribe_multi(ORB_ID(navigator_mission_item), 0);
+
 	// Before starting, we ought to send a heartbeat to initiate the SITL
 	// simulator to start sending sensor data which will set the time and
 	// get everything rolling.
@@ -749,6 +768,8 @@ void Simulator::send()
 	px4_pollfd_struct_t fds_actuator_outputs[1] = {};
 	fds_actuator_outputs[0].fd = _actuator_outputs_sub;
 	fds_actuator_outputs[0].events = POLLIN;
+
+	uint64_t controls_sent = 0;
 
 	while (true) {
 
@@ -775,6 +796,13 @@ void Simulator::send()
 			px4_lockstep_wait_for_components();
 
 			send_controls();
+			controls_sent++;
+		}
+
+		if (controls_sent % 100 == 0) { // Every 100 controls
+
+			send_mission_status();
+			controls_sent = 0;
 		}
 	}
 
