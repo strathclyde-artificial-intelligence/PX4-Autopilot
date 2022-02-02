@@ -238,6 +238,7 @@ private:
 	void send();
 	void send_controls();
 	void send_mission_status();
+	void send_temperature();
 	void send_heartbeat();
 	void send_mavlink_message(const mavlink_message_t &aMsg);
 	void update_sensors(const hrt_abstime &time, const mavlink_hil_sensor_t &sensors);
@@ -246,6 +247,7 @@ private:
 
 	void actuator_controls_from_outputs(mavlink_hil_actuator_controls_t *msg);
 
+	double _latest_temperature = 25.0;
 
 	// uORB publisher handlers
 	uORB::Publication<vehicle_angular_velocity_s>	_vehicle_angular_velocity_ground_truth_pub{ORB_ID(vehicle_angular_velocity_groundtruth)};

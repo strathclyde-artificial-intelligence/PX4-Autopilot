@@ -530,7 +530,7 @@ void Simulator::handle_message_hil_sensor(const mavlink_message_t *msg)
 	px4_clock_settime(CLOCK_MONOTONIC, &ts);
 
 	hrt_abstime now_us = hrt_absolute_time();
-
+	_latest_temperature = imu.temperature;
 #if 0
 	// This is just for to debug missing HIL_SENSOR messages.
 	static hrt_abstime last_time = 0;
