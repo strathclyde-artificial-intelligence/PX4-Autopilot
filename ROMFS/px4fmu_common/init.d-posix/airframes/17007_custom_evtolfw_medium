@@ -1,0 +1,7 @@
+#!/bin/sh
+# @name EVTOL FW Medium
+# @type EVTOL_FW
+. ${R}etc/init.d/rc.vtol_defaults
+. ${R}etc/init.d-posix/airframes/4201_custom_evtol
+set MIXER_FILE etc/mixers-sitl/standard_vtol_sitl.main.mix
+set MIXER custom

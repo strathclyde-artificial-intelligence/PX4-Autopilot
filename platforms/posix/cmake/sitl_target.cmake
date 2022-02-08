@@ -138,6 +138,12 @@ set(debuggers
 )
 
 set(models
+	custom_evtolfw_medium
+	custom_evtolfw_small
+	custom_quad_medium
+	custom_evtolfw_large
+	custom_quad_large
+	custom_quad_small
 	none
 	custom_evtol
 	custom_quad

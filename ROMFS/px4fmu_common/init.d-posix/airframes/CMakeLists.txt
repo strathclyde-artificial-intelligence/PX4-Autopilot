@@ -32,6 +32,12 @@
 ############################################################################
 
 px4_add_romfs_files(
+	17007_custom_evtolfw_medium
+	17006_custom_evtolfw_small
+	17005_custom_quad_medium
+	17004_custom_evtolfw_large
+	17003_custom_quad_large
+	17002_custom_quad_small
 	4201_custom_evtol
 	4200_custom_quad
 	10016_iris

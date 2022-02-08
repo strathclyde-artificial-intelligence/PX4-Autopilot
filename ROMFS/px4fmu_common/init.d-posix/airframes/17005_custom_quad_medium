@@ -1,0 +1,7 @@
+#!/bin/sh
+# @name QuadCopter Medium
+# @type QUADCOPTER
+. ${R}etc/init.d/rc.mc_defaults
+. ${R}etc/init.d-posix/airframes/4200_custom_quad
+set MIXER quad_x
+set PWM_OUT 1234
