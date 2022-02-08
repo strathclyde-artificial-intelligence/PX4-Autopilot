@@ -32,7 +32,7 @@
 ############################################################################
 
 px4_add_romfs_files(
-	4201_avy_aera
+	4201_custom_evtol
 	4200_custom_quad
 	10016_iris
 	10017_iris_ctrlalloc

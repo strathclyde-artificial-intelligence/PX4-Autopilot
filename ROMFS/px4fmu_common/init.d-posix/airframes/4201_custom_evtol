@@ -47,21 +47,21 @@ param set VT_B_TRANS_DUR 10
 param set VT_TYPE 2
 param set VT_PSHER_RMP_DT 2
 
-param set MC_ROLLRATE_K 1 
-param set MC_ROLLRATE_D 0.0004 #0.0090 
-param set MC_ROLLRATE_I 0.02 
+param set MC_ROLLRATE_K 1
+param set MC_ROLLRATE_D 0.0004 #0.0090
+param set MC_ROLLRATE_I 0.02
 
-param set MC_PITCHRATE_K 1 
-param set MC_PITCHRATE_D 0.0005 #0.0090 
-param set MC_PITCHRATE_I 0.02 
+param set MC_PITCHRATE_K 1
+param set MC_PITCHRATE_D 0.0005 #0.0090
+param set MC_PITCHRATE_I 0.02
 
-param set MC_YAWRATE_K 1 
-param set MC_YAWRATE_I 0.10 
+param set MC_YAWRATE_K 1
+param set MC_YAWRATE_I 0.10
 param set CBRK_AIRSPD_CHK 162128
 param set FW_ARSP_MODE 1
 param set VT_TRANS_MIN_TM 4
 param set VT_FW_PERM_STAB 1
-set MAV_TYPE 22 
+set MAV_TYPE 22
 
 set MIXER_FILE etc/mixers-sitl/standard_vtol_sitl.main.mix
 set MIXER custom

@@ -139,7 +139,7 @@ set(debuggers
 
 set(models
 	none
-	avy_aera
+	custom_evtol
 	custom_quad
 	believer
 	boat
