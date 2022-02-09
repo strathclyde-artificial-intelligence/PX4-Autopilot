@@ -27,6 +27,7 @@ param set FW_T_SINK_MAX 2.7
 param set FW_T_SINK_MIN 2.2
 param set FW_P_TC 0.7
 param set MIS_TAKEOFF_ALT 15
+param set THR_MDL_FAC 1.000
 
 param set MPC_XY_CRUISE 20
 param set MPC_ACC_HOR_MAX 5
