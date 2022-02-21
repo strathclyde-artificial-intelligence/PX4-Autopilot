@@ -3,5 +3,7 @@
 # @type QUADCOPTER
 . ${R}etc/init.d/rc.mc_defaults
 . ${R}etc/init.d-posix/airframes/4200_custom_quad
+param set MC_YAWRATE_K 3.0
+param set MC_YAWRATE_I 0.12
 set MIXER quad_x
 set PWM_OUT 1234
