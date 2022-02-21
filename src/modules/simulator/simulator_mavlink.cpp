@@ -201,7 +201,6 @@ void Simulator::send_mission_status()
 	float x, y;
 
 	mavlink_mission_item_int_t mission_item;
-
 	mission_item.seq = _mission_status.sequence_current;
 	mission_item.frame = _mission_status.frame;
 	_global_local_proj_ref.project(_mission_status.latitude, _mission_status.longitude, x, y);
