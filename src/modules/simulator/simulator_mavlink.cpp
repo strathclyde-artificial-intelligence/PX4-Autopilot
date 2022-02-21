@@ -201,13 +201,16 @@ void Simulator::send_mission_status()
 	float x, y;
 
 	mavlink_mission_item_int_t mission_item;
+
 	mission_item.seq = _mission_status.sequence_current;
 	mission_item.frame = _mission_status.frame;
 	_global_local_proj_ref.project(_mission_status.latitude, _mission_status.longitude, x, y);
 	mission_item.x = x;
-	mission_item.autocontinue = 1;
+	mission_item.autocontinue = _mission_status.autocontinue;
+	mission_item.mission_type = 0;
 	mission_item.y = y;
 	mission_item.z = -_mission_status.altitude; // Z down (px4 global frame is ENU)
+
 	mavlink_message_t message{};
 	mavlink_msg_mission_item_int_encode(_param_mav_sys_id.get(), _param_mav_comp_id.get(), &message, &mission_item);
 	send_mavlink_message(message);
