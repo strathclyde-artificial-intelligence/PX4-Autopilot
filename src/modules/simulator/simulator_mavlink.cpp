@@ -206,10 +206,6 @@ void Simulator::send_mission_status()
 	_global_local_proj_ref.project(_mission_status.latitude, _mission_status.longitude, x, y);
 	mission_item.x = x;
 	mission_item.autocontinue = _mission_status.autocontinue;
-	mission_item.param1 = _mission_status.param1;
-	mission_item.param2 = _mission_status.param2;
-	mission_item.param3 = _mission_status.param3;
-	mission_item.param4 = _mission_status.param4;
 	mission_item.mission_type = 0;
 	mission_item.y = y;
 	mission_item.z = -_mission_status.altitude; // Z down (px4 global frame is ENU)
