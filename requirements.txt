@@ -9,3 +9,4 @@ pyyaml
 pyros-genmsg
 packaging
 jsonschema
+future
