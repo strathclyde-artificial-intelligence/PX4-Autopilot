@@ -975,7 +975,7 @@ void Simulator::run()
 	while (true) {
 
 		// wait for new mavlink messages to arrive
-		int pret = ::poll(&fds[0], fd_count, 1000);
+		int pret = ::poll(&fds[0], fd_count, 3000);
 
 		if (pret == 0) {
 			// Timed out.
